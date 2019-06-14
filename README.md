@@ -1,2 +1,2 @@
 # arlo-cl
-Arlo COmmand Line Utility
+Arlo Cmmand Line Utility
