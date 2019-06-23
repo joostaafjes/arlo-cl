@@ -5,6 +5,8 @@
 
 from arlo import Arlo
 import sys
+import os
+import errno
 import argparse
 import configparser
 
@@ -18,27 +20,31 @@ def getDeviceFromName(name,devices):
 
 try:
 
-    # Initialize config file
-    config = configparser.ConfigParser()
-    config.read("arlo-cl.cfg")
-
-    # Credentials for Arlo
-    USERNAME = config.get("CREDENTIALS","USERNAME")
-    PASSWORD = config.get("CREDENTIALS","PASSWORD")
-
     # Check command line parameters
     parser = argparse.ArgumentParser()
     parser.add_argument('command', choices=['list-devices', 'list-modes', 'get-deviceid', 'get-uniqueid', 'set-mode'])
     parser.add_argument('--devicetype', '-t', choices=['basestation', 'arlobridge', 'camera', 'lights', 'siren'], help='the type of the device, if empty: all devicetypes')
     parser.add_argument('--devicename', '-n', help='the name of the device, only devices of type "basestation" or "arlobridge" are allowed')
     parser.add_argument('--mode', '-m', choices=['aktiviert', 'deaktiviert', 'aktiviert_ohne_terrasse', 'garten', 'garten_hinten'], help='the mode which should be set')
-
+    parser.add_argument('--configfile', '-c', default='./arlo-cl.cfg', help='Path to config file, use ./arlo-cl.cfg if empty')
     args = parser.parse_args()
 
     command=args.command
     devicetype=args.devicetype
     devicename=args.devicename
     mode=args.mode
+    configfile=args.configfile
+  
+    # Initialize config file
+    if not os.path.isfile(configfile):
+        print("Error: Config file "+configfile+" not found" )
+        sys.exit(errno.ENOENT)
+    config = configparser.ConfigParser()
+    config.read(configfile)
+
+    # Credentials for Arlo
+    USERNAME = config.get("CREDENTIALS","USERNAME")
+    PASSWORD = config.get("CREDENTIALS","PASSWORD")
 
     # Instantiating the Arlo object automatically calls Login(), which returns an oAuth token that gets cached.
     # Subsequent successful calls to login will update the oAuth token.
