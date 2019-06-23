@@ -7,6 +7,7 @@ from arlo import Arlo
 import sys
 import argparse
 import configparser
+from request import Request
 
 
 def getDeviceFromName(name,devices):
