@@ -105,7 +105,7 @@ try:
 
     elif command == 'set-mode' and mode == 'aktiviert_ohne_terrasse':
         device = getDeviceFromName("Home",devices)
-        arlo.Disarm(device)
+        arlo.CustomMode(device,"mode5")  # Garten_Alle
         device = getDeviceFromName("Bridge_AZMichael",devices)
         arlo.CustomMode(device,"mode6")  # OhneTerrasse 
         device = getDeviceFromName("Bridge_AZSabine",devices)
