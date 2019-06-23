@@ -1,14 +1,23 @@
 # arlo-cl.py / Arlo Command Line 
 # Send Commands to your Arlo Environment via the command line
+# https://github.com/jeffreydwalter/arlo
 # Michael Urspringer / v0.1
 
+from arlo import Arlo
 import sys
 import argparse
-from arlo import Arlo
-
 import configparser
 
+
+def getDeviceFromName(name,devices):
+    for device in devices:
+        if device['deviceName'] == name and device['deviceType'] != "siren":
+            return(device)
+    return("")
+
+
 try:
+
     # Initialize config file
     config = configparser.ConfigParser()
     config.read("arlo-cl.cfg")
@@ -19,26 +28,27 @@ try:
 
     # Check command line parameters
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=['list-devices', 'list-modes', 'get-deviceid', 'get-uniqueid'])
+    parser.add_argument('command', choices=['list-devices', 'list-modes', 'get-deviceid', 'get-uniqueid', 'set-mode'])
     parser.add_argument('--devicetype', '-t', choices=['basestation', 'arlobridge', 'camera', 'lights', 'siren'], help='the type of the device, if empty: all devicetypes')
     parser.add_argument('--devicename', '-n', help='the name of the device, only devices of type "basestation" or "arlobridge" are allowed')
-    args = parser.parse_args()
+    parser.add_argument('--mode', '-m', choices=['aktiviert', 'deaktiviert', 'garten', 'garten_hinten'], help='the mode which should be set')
 
-    #print("~ Command: {}".format(args.command))
-    #print("~ Device Type: {}".format(args.devicetype))
+    args = parser.parse_args()
 
     command=args.command
     devicetype=args.devicetype
     devicename=args.devicename
+    mode=args.mode
 
     # Instantiating the Arlo object automatically calls Login(), which returns an oAuth token that gets cached.
     # Subsequent successful calls to login will update the oAuth token.
     arlo = Arlo(USERNAME, PASSWORD)
     # At this point you're logged into Arlo.
+    
+    # Get all devices
+    devices = arlo.GetDevices('')
 
-    #############################
     if command == 'list-devices':
-    #############################
         # List all devices
         # Get the list of devices and filter on device type.
         # This will return an array which includes all of the devices's associated metadata.
@@ -46,9 +56,8 @@ try:
         #print ("Device Name : Device Type : Device ID : Unique ID")
         for key in devices:
             print (key['deviceName']," : ", key['deviceType']," : ", key['deviceId']," : ", key['uniqueId'])
-    #############################
+
     elif command == 'list-modes':
-    #############################
         # List all modes for a specific device
         modes=arlo.GetAutomationDefinitions()
         #print (modes)
@@ -57,22 +66,53 @@ try:
             for mode in modes[id]['modes']:
                 print(id," : ",mode['name']," : ",mode['id']," : ",mode['type'])
             print("----------------------------------")
-    #############################
+
     elif command == 'get-deviceid':
-    #############################
         # Get the Device ID of the device "devicename"
         devices = arlo.GetDevices(devicetype)
         for key in devices:
             if key['deviceName'] == devicename:
                 print (key['deviceId'])
-    #############################
+
     elif command == 'get-uniqueid':
-    #############################
         # Get the Unique ID of the device "devicename"
         devices = arlo.GetDevices(devicetype)
         for key in devices:
             if key['deviceName'] == devicename:
                 print (key['uniqueId'])
+
+    elif command == 'set-mode' and mode == 'deaktiviert':
+        device = getDeviceFromName("Home",devices)
+        arlo.Disarm(device)
+        device = getDeviceFromName("Bridge_AZMichael",devices)
+        arlo.Disarm(device)
+        device = getDeviceFromName("Bridge_AZSabine",devices)
+        arlo.Disarm(device)
+
+    elif command == 'set-mode' and mode == 'aktiviert':
+        device = getDeviceFromName("Home",devices)
+        arlo.Arm(device)
+        device = getDeviceFromName("Bridge_AZMichael",devices)
+        arlo.Arm(device)
+        device = getDeviceFromName("Bridge_AZSabine",devices)
+        arlo.Arm(device)
+
+    elif command == 'set-mode' and mode == 'garten':
+        device = getDeviceFromName("Home",devices)
+        arlo.CustomMode(device,"mode5")  # Garten_Alle
+        device = getDeviceFromName("Bridge_AZMichael",devices)
+        arlo.CustomMode(device,"mode4")  # Garten
+        device = getDeviceFromName("Bridge_AZSabine",devices)
+        arlo.Arm(device)
+
+    elif command == 'set-mode' and mode == 'garten_hinten':
+        device = getDeviceFromName("Home",devices)
+        arlo.CustomMode(device,"mode4")  # Garten_2
+        device = getDeviceFromName("Bridge_AZMichael",devices)
+        arlo.Disarm(device)
+        device = getDeviceFromName("Bridge_AZSabine",devices)
+        arlo.Arm(device)
+
     else:
         # Should not happen ...
         print("This should not happen")
