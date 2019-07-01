@@ -1,7 +1,7 @@
 # arlo-cl.py / Arlo Command Line 
 # Send Commands to your Arlo Environment via the command line
 # https://github.com/jeffreydwalter/arlo
-# Michael Urspringer / v0.1
+# Michael Urspringer / v0.2
 
 from arlo import Arlo
 import sys
@@ -52,37 +52,31 @@ try:
     # At this point you're logged into Arlo.
     
     # Get all devices
-    devices = arlo.GetDevices('')
+    devices = arlo.GetDevices(devicetype)
 
     if command == 'list-devices':
         # List all devices
         # Get the list of devices and filter on device type.
         # This will return an array which includes all of the devices's associated metadata.
-        devices = arlo.GetDevices(devicetype)
-        #print ("Device Name : Device Type : Device ID : Unique ID")
-        for key in devices:
-            print (key['deviceName']," : ", key['deviceType']," : ", key['deviceId']," : ", key['uniqueId'])
+        for device in devices:
+            print (device['deviceName']," : ", device['deviceType']," : ", device['deviceId']," : ", device['uniqueId'])
 
     elif command == 'list-modes':
         # List all modes for a specific device
         modes=arlo.GetAutomationDefinitions()
-        #print (modes)
         for id in modes:
-            #print (modes[id]['modes'])
             for mode in modes[id]['modes']:
                 print(id," : ",mode['name']," : ",mode['id']," : ",mode['type'])
             print("----------------------------------")
 
     elif command == 'get-deviceid':
         # Get the Device ID of the device "devicename"
-        devices = arlo.GetDevices(devicetype)
         for key in devices:
             if key['deviceName'] == devicename:
                 print (key['deviceId'])
 
     elif command == 'get-uniqueid':
         # Get the Unique ID of the device "devicename"
-        devices = arlo.GetDevices(devicetype)
         for key in devices:
             if key['deviceName'] == devicename:
                 print (key['uniqueId'])
