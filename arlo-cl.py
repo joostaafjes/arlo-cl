@@ -25,7 +25,7 @@ try:
     parser.add_argument('command', choices=['list-devices', 'list-modes', 'get-deviceid', 'get-uniqueid', 'set-mode'])
     parser.add_argument('--devicetype', '-t', choices=['basestation', 'arlobridge', 'camera', 'lights', 'siren'], help='the type of the device, if empty: all devicetypes')
     parser.add_argument('--devicename', '-n', help='the name of the device, only devices of type "basestation" or "arlobridge" are allowed')
-    parser.add_argument('--mode', '-m', choices=['aktiviert', 'deaktiviert', 'aktiviert_ohne_terrasse', 'garten', 'garten_hinten'], help='the mode which should be set')
+    parser.add_argument('--mode', '-m', choices=['aktiviert', 'deaktiviert', 'aktiviert_tag','aktiviert_ohne_terrasse', 'garten', 'garten_hinten'], help='the mode which should be set')
     parser.add_argument('--configfile', '-c', default='./arlo-cl.cfg', help='Path to config file, use ./arlo-cl.cfg if empty')
     args = parser.parse_args()
 
@@ -102,6 +102,14 @@ try:
         arlo.Arm(device)
         device = getDeviceFromName("Bridge_AZSabine",devices)
         arlo.Arm(device)
+
+    elif command == 'set-mode' and mode == 'aktiviert_tag':
+        device = getDeviceFromName("Home",devices)
+        arlo.CustomMode(device,"mode6")  # Aktiviert_Tag
+        device = getDeviceFromName("Bridge_AZMichael",devices)
+        arlo.CustomMode(device,"mode8")  # Aktiviert_Tag
+        device = getDeviceFromName("Bridge_AZSabine",devices)
+        arlo.CustomMode(device,"mode2")  # Aktiviert_Tag
 
     elif command == 'set-mode' and mode == 'aktiviert_ohne_terrasse':
         device = getDeviceFromName("Home",devices)
