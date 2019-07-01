@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # arlo-cl.py / Arlo Command Line 
 # Send Commands to your Arlo Environment via the command line
 # https://github.com/jeffreydwalter/arlo
