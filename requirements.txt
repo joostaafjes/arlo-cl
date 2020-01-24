@@ -1,1 +1,1 @@
-git+git://github.com/jeffreydwalter/arlo.git#egg=arlo
+-e git+https://github.com/jeffreydwalter/arlo#egg=arlo
