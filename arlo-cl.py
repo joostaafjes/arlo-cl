@@ -141,7 +141,6 @@ try:
         arlo.Arm(device)
 
     elif command == 'set-brightness':
-        print("set-brightness",devicename,brightness)
         camera = getDeviceFromName(devicename,devices)
         if camera == '':
             raise Exception("Camera "+devicename+" not found")
