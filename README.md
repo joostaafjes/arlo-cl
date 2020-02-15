@@ -54,6 +54,17 @@ Output:
 <DEVICENAME>  :  <DEVICETYPE>  :  <DEVICEID>  :  <UNIQUE_DEVICEID>
 ```
 
+### List only camera devices:
+
+```text
+arlo-cl.py list-devices --devicetype camera
+```
+Output:
+
+```text
+<DEVICENAME>  :  <DEVICETYPE>  :  <DEVICEID>  :  <UNIQUE_DEVICEID>
+```
+
 ### List modes of devices
 
 ```text
@@ -63,6 +74,17 @@ Output:
 
 ```text
 <UNIQUE_DEVICEID>  :  <MODE_NAME>  :  <MODE_ID>  :  <MODE_TYPE> 
+```
+
+### Get Unique ID of a device named "Garten_1":
+
+```text
+arlo-cl.py get-uniqueid --devicename Garten_1
+```
+Output:
+
+```text
+<UNIQUE_DEVICEID>
 ```
 
 ### Set mode to "aktiviert" (arm all devices, see above)
