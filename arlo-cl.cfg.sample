@@ -2,3 +2,5 @@
 USERNAME = user
 PASSWORD = password
 
+[BASESTATION]
+NAME = basestation_name
