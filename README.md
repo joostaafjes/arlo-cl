@@ -24,7 +24,7 @@ garten_hinten | Only activate some of my cams
 
 ## Config
 
-The script is looking for a config file where you define the user and password for your Arlo account. See "arlo-cl.cfg.sample" as a sample of how the file looks like.
+The script is looking for a config file where you define the user and password for your Arlo account and the name of your base station (currently only one base station is supported).  See "arlo-cl.cfg.sample" as a sample of how the file looks like.
 
 I am using an additional account I created just to be used with this script so it does not interfere with my normal Arlo account I am using e.g. in the Arlo app.
 
@@ -36,9 +36,10 @@ The config file is named "arlo-cl.cfg" and needs to be put in the same directory
 ```text
 usage: arlo-cl.py [-h]
                   [--devicetype {basestation,arlobridge,camera,lights,siren}]
+                  [--devicename DEVICENAME]
                   [--mode {aktiviert,deaktiviert,aktiviert_tag,aktiviert_ohne_terrasse,garten,garten_hinten}]
-                  [--configfile CONFIGFILE]
-                  {list-devices,list-modes,get-deviceid,get-uniqueid,set-mode}
+                  [--brightness {-2,-1,0,1,2}] [--configfile CONFIGFILE]
+                  {list-devices,list-modes,get-deviceid,get-uniqueid,set-mode,set-brightness}
 ```
 
 ## Samples:
@@ -91,5 +92,11 @@ Output:
 
 ```text
 arlo-cl.py set_mode aktiviert
+```
+
+### Set brightness value for camera "CamName" to "+2"
+
+```text
+arlo-cl.py set-brightness --devicename CamName --brightness +2
 ```
 

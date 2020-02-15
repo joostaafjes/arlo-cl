@@ -3,7 +3,7 @@
 # arlo-cl.py / Arlo Command Line 
 # Send Commands to your Arlo Environment via the command line
 # https://github.com/jeffreydwalter/arlo
-# Michael Urspringer / v0.2
+# Michael Urspringer / v0.3
 
 from arlo import Arlo
 import sys
@@ -24,10 +24,11 @@ try:
 
     # Check command line parameters
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=['list-devices', 'list-modes', 'get-deviceid', 'get-uniqueid', 'set-mode'])
+    parser.add_argument('command', choices=['list-devices', 'list-modes', 'get-deviceid', 'get-uniqueid', 'set-mode', 'set-brightness'])
     parser.add_argument('--devicetype', '-t', choices=['basestation', 'arlobridge', 'camera', 'lights', 'siren'], help='the type of the device, if empty: all devicetypes')
     parser.add_argument('--devicename', '-n', help='the name of the device, only devices of type "basestation" or "arlobridge" are allowed')
     parser.add_argument('--mode', '-m', choices=['aktiviert', 'deaktiviert', 'aktiviert_tag','aktiviert_ohne_terrasse', 'garten', 'garten_hinten'], help='the mode which should be set')
+    parser.add_argument('--brightness', '-b', default='0', choices=['-2', '-1', '0', '1', '2'], help='the brightness value which should be set')
     parser.add_argument('--configfile', '-c', default='./arlo-cl.cfg', help='Path to config file, use ./arlo-cl.cfg if empty')
     args = parser.parse_args()
 
@@ -35,6 +36,7 @@ try:
     devicetype=args.devicetype
     devicename=args.devicename
     mode=args.mode
+    brightness=args.brightness
     configfile=args.configfile
   
     # Initialize config file
@@ -48,13 +50,19 @@ try:
     USERNAME = config.get("CREDENTIALS","USERNAME")
     PASSWORD = config.get("CREDENTIALS","PASSWORD")
 
+    # Base Station (currently only one base station supported!)
+    BASESTATIONNAME = config.get("BASESTATION","NAME")
+    
     # Instantiating the Arlo object automatically calls Login(), which returns an oAuth token that gets cached.
     # Subsequent successful calls to login will update the oAuth token.
     arlo = Arlo(USERNAME, PASSWORD)
     # At this point you're logged into Arlo.
     
-    # Get all devices
+    # Get all device objects
     devices = arlo.GetDevices(devicetype)
+
+    # Get base station object
+    basestation = getDeviceFromName(BASESTATIONNAME,devices)
 
     if command == 'list-devices':
         # List all devices
@@ -131,6 +139,13 @@ try:
         arlo.Disarm(device)
         device = getDeviceFromName("Bridge_AZSabine",devices)
         arlo.Arm(device)
+
+    elif command == 'set-brightness':
+        print("set-brightness",devicename,brightness)
+        camera = getDeviceFromName(devicename,devices)
+        if camera == '':
+            raise Exception("Camera "+devicename+" not found")
+        arlo.AdjustBrightness(basestation, camera, int(brightness))
 
     else:
         # Should not happen ...
