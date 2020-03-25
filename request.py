@@ -38,8 +38,14 @@ class Request(object):
 
         if raw:
             return body
-        else:
+        elif 'success' in body:
             if body['success'] == True:
+                if 'data' in body:
+                    return body['data']
+            else:
+                raise HTTPError('Request ({0} {1}) failed: {2}'.format(method, url, r.json()), response=r)
+        elif 'meta' in body:
+            if body['meta']['code'] == 200:
                 if 'data' in body:
                     return body['data']
             else:

@@ -27,7 +27,7 @@ from datetime import datetime
 
 import calendar
 import json
-#import logging
+import logging
 import math
 import os
 import random
@@ -35,6 +35,8 @@ import requests
 import signal
 import time
 import sys
+
+import base64
 
 if sys.version[0] == '2':
     import Queue as queue
@@ -109,38 +111,186 @@ class Arlo(object):
         """
         This call returns the following:
         {
-            "userId":"XXX-XXXXXXX",
-            "email":"user@example.com",
-            "token":"2_5HicFJMXXXXX-S_7IuK2EqOUHXXXXXXXXXXX1CXKWTThgU18Va_XXXXXX5S00hUafv3PV_if_Bl_rhiFsDHYwhxI3CxlVnR5f3q2XXXXXX-Wnt9F7D82uN1f4cXXXXX-FMUsWF_6tMBqwn6DpzOaIB7ciJrnr2QJyKewbQouGM6",
-            "paymentId":"XXXXXXXX",
-            "authenticated":1472961381,
-            "accountStatus":"registered",
-            "serialNumber":"XXXXXXXXXXXXX",
-            "countryCode":"US",
-            "tocUpdate":false,
-            "policyUpdate":false,
-            "validEmail":true
+            'userId': 'XXXXX-XXX-XXXXXXXX',
+            'email': 'user@example.com',
+            'token': '2_oJ0aXXXXXXXXXX_Jcgdk6ulwT0XXXXXXXXXXLmRpaYTYVq6BEz3B5kZ35HBXXXXXXXXXX4vt6H7dsoK0fTwTUXvaExQyDJelSDEc41XXXXXXXXXXlHWGYrP86Lc3JacV-36Kp2XXXXXXXXXXON5grYgj68cgMIGX1kDE00HabvVR-xu0XxdG1oRqnl5UXXXXXXXXXXX8EyJAmqD7zrmhpgWbSBqilOCJWF7Et8dBtkkKo7sn-XZXXXXXXXXXXi4g1kQXzHMIxyXmz6WsjonKfB2h8PP8tLVzLxmn5s9GqRsTD_d4nU8iU72M0wS-3Wh0njoFtybC1jfwF2XXXXXXXXXX',
+            'accountStatus': 'registered',
+            'countryCode': 'DE',
+            'tocUpdate': False,
+            'policyUpdate': False,
+            'validEmail': True,
+            'arlo': True,
+            'dateCreated': 1545374127585,
+            'mailProgramChecked': True
         }
+        
         """
+
         self.username = username
         self.password = password
 
         self.request = Request()
 
-        body = self.request.post('https://my.arlo.com/hmsweb/login/v2', {'email': self.username, 'password': self.password})
+        headers = {
+                'Referer': 'https://my.arlo.com/',
+                'Auth-Version': '2',
+				'Content-Type': 'application/json;charset=utf-8',
+        }
+
+        body = self.request.post('https://ocapi-app.arlo.com/api/auth', {'email': self.username, 'password': self.password, "language":"de","EnvSource":"prod"}, headers)
+        token = body['token']
+        token_base64 = str(base64.b64encode(token.encode("utf-8")), "utf-8")
+
+        # Check if 2FA enabled
+        if body["mfa"]:
+        # Get a list of all valid two factors
+            headers = {
+                    'Referer': 'https://my.arlo.com/',
+                    'Host': 'ocapi-app.arlo.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0',
+                    'Accept': '*/*',
+                    'Accept-Language': 'de-DE,de;q=0.8,en-GB;q=0.6,en;q=0.4,en-US;q=0.2',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Origin': 'https://my.arlo.com',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Pragma': 'no-cache',
+                    'Cache-Control': 'no-cache',
+                    'TE': 'Trailers',
+                    'Access-Control-Request-Method': 'GET',
+                    'Access-Control-Request-Headers': 'auth-version,authorization,source'
+            }
+            #self.request.session.headers.update(headers)
+            temp = self.request.options('https://ocapi-app.arlo.com/api/getFactors?data%20=%20'+str(body['authenticated']), {}, headers)
+
+            headers = {
+                    'Referer': 'https://my.arlo.com/',
+                    'Auth-Version': '2',
+                    'Host': 'ocapi-app.arlo.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'de-DE,de;q=0.8,en-GB;q=0.6,en;q=0.4,en-US;q=0.2',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Authorization': 'Ml9vckl1T0NEdHNfT3pwZnBaeE5nc1dLRXlZbmtOUVlYQ2d6MjhOeWROd1pDaTR6bnJLcjRtLXlyZDRmM3BKaUNwU2pwRUhFcXI3ak1YRVhCM0dmaUppU25WT1E5TXprSWY2cjB2RzdyYTFWQ3FPSmY3cWVPMXFYVlZYa3JleVRGdm9BY1ladzNXdUxrR1JfR1QyWGsteHBzUTU2SUszc3dCSDJUdEhhRW5KR3NuS2plZDZ2LVlVQk00aWp6SG0tYXIzUnhDMzFFNDROY1NSSHhWWTMtZ3FDRzVaVmFsSi1rVy1jTXgzMUtXRFEyaXpreThjQWEzbjFkVUxIMnhhNmZlbTExaTlEaUhuN3NndHdRcFBJdlhKYTVxR2dnSFRHLTdxS3gyeFlHZzg4eXRZZkktMTNzNkJ1aVBJWUFrLTBoNm5NUWgwa0FTeDFjRTNTNW1NaHo5Um5F',
+                    'source': 'arloCamWeb',
+                    'Origin': 'https://my.arlo.com',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Pragma': 'no-cache',
+                    'Cache-Control': 'no-cache',
+                    'TE': 'Trailers',
+                    'Access-Control-Request-Method': 'POST',
+                    'Access-Control-Request-Headers': 'auth-version,authorization,content-type,source'
+            }
+            #self.request.session.headers.update(headers)
+            body,cookies = self.request.get('https://ocapi-app.arlo.com/api/getFactors?data%20=%20'+str(body['authenticated']), {}, headers, cookies)
+            twofactors_list = body['items']
+            # Get the two factor ID for SMS
+            twofactor_id = list(filter(lambda twofactors_list: twofactors_list['factorType'] == 'SMS', twofactors_list))[0]['factorId']
+            # Request 2FA SMS
+            print("Request 2FA SMS")
+            headers = {
+                'Referer': 'https://my.arlo.com/',
+                'Auth-Version': '2',
+                #'Authorization': 'Ml9veTJYN1BGYnBVRWlETlVXaWV4RnRRYzFNRGgxUnVCWWVFLU1YSlQ4R3BRZFpUMVoteXgyV1hIZjFDQXpzWW1RNXRrd0k1dERONl90NUluNnQ4ZGtJRjlKbk5Za0RsTEpscDFPS1VFQ2tYSURIOXhucm9YWXNhdVNpMU1USEk4eXhFZ0hjTm9YZXU1dXUyYThJc2pPZWZnZzdoUUQtbU8wVFkyUFI1akpGTXNhbmVQM3pfSUNpcWVnNThDcl9CdDFYd2FaLUNCZUpIRzBTdkE4eGNzTDcxTXFLbVVUVWJ6V2RnM1hPUTBETmh5UHZiZlJkSmphRmVScy1vZ0R6bFlTWWx2dFpPbjZieEgtS1I1a2tXVGZhbG44OGlNT01xUURWRnZXZHBOdVFXSDY3N1U3NWFIVjFyS2EyZ2djMzlPLXFXZnhwaEVJelRrUTEtQUVobGpOenlF',
+				'Host': 'ocapi-app.arlo.com',
+				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0',
+				'Accept': 'application/json, text/plain, */*',
+				'Accept-Language': 'de-DE,de;q=0.8,en-GB;q=0.6,en;q=0.4,en-US;q=0.2',
+				'Accept-Encoding': 'gzip, deflate, br',
+				'source': 'arloCamWeb',
+				'Content-Type': 'application/json;charset=utf-8',
+				'Content-Length': '131',
+				'Origin': 'https://my.arlo.com',
+				'DNT': '1',
+				'Connection': 'keep-alive',
+				#'Cookie': '__cfduid=dd06cfd63cf546297d177ea7df3f84acb1584442298; __cfruid=49d3bed5c246ce48cffa6118a0f7e4e4837b0ed8-1584442298',
+				'Pragma': 'no-cache',
+				'Cache-Control': 'no-cache',
+				'TE': 'Trailers',
+                'Access-Control-Request-Method': 'POST',
+                'Access-Control-Request-Headers': 'auth-version,authorization,content-type,source'
+            }
+            #self.request.session.headers.update(headers)
+            temp = self.request.options('https://ocapi-app.arlo.com/api/startAuth', {"factorId" : twofactor_id}, headers)
+            headers = {
+                    'Referer': 'https://my.arlo.com/',
+                    'Auth-Version': '2',
+                    'Host': 'ocapi-app.arlo.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'de-DE,de;q=0.8,en-GB;q=0.6,en;q=0.4,en-US;q=0.2',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Authorization': 'Ml9vckl1T0NEdHNfT3pwZnBaeE5nc1dLRXlZbmtOUVlYQ2d6MjhOeWROd1pDaTR6bnJLcjRtLXlyZDRmM3BKaUNwU2pwRUhFcXI3ak1YRVhCM0dmaUppU25WT1E5TXprSWY2cjB2RzdyYTFWQ3FPSmY3cWVPMXFYVlZYa3JleVRGdm9BY1ladzNXdUxrR1JfR1QyWGsteHBzUTU2SUszc3dCSDJUdEhhRW5KR3NuS2plZDZ2LVlVQk00aWp6SG0tYXIzUnhDMzFFNDROY1NSSHhWWTMtZ3FDRzVaVmFsSi1rVy1jTXgzMUtXRFEyaXpreThjQWEzbjFkVUxIMnhhNmZlbTExaTlEaUhuN3NndHdRcFBJdlhKYTVxR2dnSFRHLTdxS3gyeFlHZzg4eXRZZkktMTNzNkJ1aVBJWUFrLTBoNm5NUWgwa0FTeDFjRTNTNW1NaHo5Um5F',
+                    'source': 'arloCamWeb',
+                    'Origin': 'https://my.arlo.com',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Pragma': 'no-cache',
+                    'Cache-Control': 'no-cache',
+                    'TE': 'Trailers',
+                    'Access-Control-Request-Method': 'POST',
+                    'Access-Control-Request-Headers': 'auth-version,authorization,content-type,source'
+            }            
+            body,cookies = self.request.post('https://ocapi-app.arlo.com/api/startAuth', {"factorId" : twofactor_id}, headers, cookies)
+            # Print JSON File formatted
+            print(json.dumps(body, indent=4, sort_keys=True))
+            otp = input("OTP? ")
+            headers = {
+                    'Referer': 'https://my.arlo.com/',
+                    'Auth-Version': '2',
+                    'Host': 'ocapi-app.arlo.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'de-DE,de;q=0.8,en-GB;q=0.6,en;q=0.4,en-US;q=0.2',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Authorization': 'Ml9vckl1T0NEdHNfT3pwZnBaeE5nc1dLRXlZbmtOUVlYQ2d6MjhOeWROd1pDaTR6bnJLcjRtLXlyZDRmM3BKaUNwU2pwRUhFcXI3ak1YRVhCM0dmaUppU25WT1E5TXprSWY2cjB2RzdyYTFWQ3FPSmY3cWVPMXFYVlZYa3JleVRGdm9BY1ladzNXdUxrR1JfR1QyWGsteHBzUTU2SUszc3dCSDJUdEhhRW5KR3NuS2plZDZ2LVlVQk00aWp6SG0tYXIzUnhDMzFFNDROY1NSSHhWWTMtZ3FDRzVaVmFsSi1rVy1jTXgzMUtXRFEyaXpreThjQWEzbjFkVUxIMnhhNmZlbTExaTlEaUhuN3NndHdRcFBJdlhKYTVxR2dnSFRHLTdxS3gyeFlHZzg4eXRZZkktMTNzNkJ1aVBJWUFrLTBoNm5NUWgwa0FTeDFjRTNTNW1NaHo5Um5F',
+                    'source': 'arloCamWeb',
+                    'Origin': 'https://my.arlo.com',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Pragma': 'no-cache',
+                    'Cache-Control': 'no-cache',
+                    'TE': 'Trailers',
+            }
+            #self.request.session.headers.update(headers)            
+            body,cookies = self.request.post('https://ocapi-app.arlo.com/api/finishAuth', {"factorAuthCode" : body['factorAuthCode'], "otp" : otp }, headers, cookies)
 
         headers = {
-            'DNT': '1',
-            'schemaVersion': '1',
-            'Host': 'my.arlo.com',
-            'Content-Type': 'application/json; charset=utf-8;',
-            'Referer': 'https://my.arlo.com/',
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_1_2 like Mac OS X) AppleWebKit/604.3.5 (KHTML, like Gecko) Mobile/15B202 NETGEAR/v1 (iOS Vuezone)',
-            'Authorization': body['token']
+                    'Referer': 'https://my.arlo.com/',
+                    'Auth-Version': '2',
+                    'Authorization': token_base64,
         }
-        self.request.session.headers.update(headers)
+        body = self.request.get('https://ocapi-app.arlo.com/api/validateAccessToken?data%20=%20'+str(body['authenticated']), {}, headers)
+
+        headers = {
+                    'Referer': 'https://my.arlo.com/',
+                    'Auth-Version': '2',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0',
+                    'Authorization': token,
+				    'Content-Type': 'application/json;charset=utf-8',     
+        }
+        body = self.request.get('https://my.arlo.com/hmsweb/users/session/v2', {}, headers)
 
         self.user_id = body['userId']
+        self.token = body['token']
+
+        #self.session_cookie = ''
+        #for cookie in self.request.session.cookies:
+        #    self.session_cookie = self.session_cookie + cookie.name + '=' + cookie.value + '; '
+
+        headers = {
+                    'Referer': 'https://my.arlo.com/',
+                    'Auth-Version': '2',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0',
+                    'Authorization': token,
+				    'Content-Type': 'application/json;charset=utf-8',
+                    #'Cookie': self.session_cookie,
+                    'schemaVersion': '1'
+        }
+
+        self.headers = headers
+
         return body
 
     def Logout(self):
@@ -268,7 +418,8 @@ class Arlo(object):
         body['from'] = self.user_id+'_web'
         body['to'] = basestation_id
 
-        self.request.post('https://my.arlo.com/hmsweb/users/devices/notify/'+body['to'], body, headers={"xcloudId":basestation.get('xCloudId')})
+        self.headers["xcloudId"] = basestation.get('xCloudId')
+        self.request.post('https://my.arlo.com/hmsweb/users/devices/notify/'+body['to'], body, headers=self.headers)
         return body.get('transId')
 
     def NotifyAndGetResponse(self, basestation, body, timeout=120):
@@ -395,7 +546,7 @@ class Arlo(object):
         return self.request.post('https://my.arlo.com/hmsweb/users/devices/'+camera.get('uniqueId')+'/activityzones', {"name": zone,"coords": coords, "color": color})
 
     def GetAutomationDefinitions(self):
-        return self.request.get('https://my.arlo.com/hmsweb/users/automation/definitions', {'uniqueIds':'all'})
+        return self.request.get('https://my.arlo.com/hmsweb/users/automation/definitions', {'uniqueIds':'all'},self.headers)
 
     def GetCalendar(self, basestation):
         return self.NotifyAndGetResponse(basestation, {"action":"get","resource":"schedule","publishResponse":False})
@@ -427,7 +578,7 @@ class Arlo(object):
         if(device["deviceType"].startswith("arloq")):
             return self.NotifyAndGetResponse(device, {"from":self.user_id+"_web", "to": device.get("parentId"), "action":"set","resource":"modes", "transId": self.genTransId(),"publishResponse":True,"properties":{"active":mode}})
         else:
-            return self.request.post('https://my.arlo.com/hmsweb/users/devices/automation/active', {'activeAutomations':[{'deviceId':device.get('deviceId'),'timestamp':self.to_timestamp(datetime.now()),'activeModes':[mode],'activeSchedules':schedules}]})
+            return self.request.post('https://my.arlo.com/hmsweb/users/devices/automation/active', {'activeAutomations':[{'deviceId':device.get('deviceId'),'timestamp':self.to_timestamp(datetime.now()),'activeModes':[mode],'activeSchedules':schedules}]},self.headers)
 
     def Arm(self, device):
         return self.CustomMode(device, "mode1")
@@ -559,7 +710,7 @@ class Arlo(object):
           "transId": "web!XXXXXXXX.389518!1514956240683"
         }
         """
-        return self.NotifyAndGetResponse(basestation, {"action":"set","resource":"cameras/"+camera.get('deviceId'),"publishResponse":True,"properties":{"brightness":brightness}})
+        return self.NotifyAndGetResponse(basestation, {"action":"set","resource":"cameras/"+camera.get('deviceId'),"publishResponse":True,"properties":{"brightness":brightness}},self.headers)
 
     def ToggleCamera(self, basestation, camera, active=True):
         """
@@ -837,7 +988,7 @@ class Arlo(object):
         If you pass in a valid device type, as a string or a list, this method will return an array of just those devices that match that type. An example would be ['basestation', 'camera']
         To filter provisioned or unprovisioned devices pass in a True/False value for filter_provisioned. By default both types are returned. 
         """
-        devices = self.request.get('https://my.arlo.com/hmsweb/users/devices')
+        devices = self.request.get('https://my.arlo.com/hmsweb/users/devices',{},self.headers)
         if device_type:
             devices = [ device for device in devices if device['deviceType'] in device_type]
 

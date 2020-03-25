@@ -52,7 +52,7 @@ try:
 
     # Base Station (currently only one base station supported!)
     BASESTATIONNAME = config.get("BASESTATION","NAME")
-    
+
     # Instantiating the Arlo object automatically calls Login(), which returns an oAuth token that gets cached.
     # Subsequent successful calls to login will update the oAuth token.
     arlo = Arlo(USERNAME, PASSWORD)
