@@ -38,6 +38,7 @@ class EventStream(object):
         self.heartbeat_handler = heartbeat_handler
 
         try:
+            self.arlo.request.session.headers.update(self.arlo.headers)
             event_stream = sseclient.SSEClient('https://my.arlo.com/hmsweb/client/subscribe?token='+self.arlo.request.session.headers.get('Authorization'), session=self.arlo.request.session)
             self.event_stream_thread = threading.Thread(name="EventStream", target=event_handler, args=(self.arlo, event_stream, self.event_stream_stop_event, ))
             self.event_stream_thread.setDaemon(True)

@@ -11,6 +11,8 @@ import os
 import errno
 import argparse
 import configparser
+import base64
+
 
 
 def getDeviceFromName(name,devices):
@@ -48,11 +50,11 @@ try:
 
     # Credentials for Arlo
     USERNAME = config.get("CREDENTIALS","USERNAME")
-    PASSWORD = config.get("CREDENTIALS","PASSWORD")
+    PASSWORD = str(base64.b64encode(config.get("CREDENTIALS","PASSWORD").encode("utf-8")), "utf-8")
 
     # Base Station (currently only one base station supported!)
     BASESTATIONNAME = config.get("BASESTATION","NAME")
-    
+
     # Instantiating the Arlo object automatically calls Login(), which returns an oAuth token that gets cached.
     # Subsequent successful calls to login will update the oAuth token.
     arlo = Arlo(USERNAME, PASSWORD)
@@ -149,6 +151,9 @@ try:
     else:
         # Should not happen ...
         print("This should not happen")
+
+    # Logout of Arlo session
+    arlo.Logout()
 
 except Exception as e:
     print(e)
