@@ -152,5 +152,8 @@ try:
         # Should not happen ...
         print("This should not happen")
 
+    # Logout of Arlo session
+    arlo.Logout()
+
 except Exception as e:
     print(e)
